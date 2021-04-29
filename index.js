@@ -18,6 +18,9 @@ let devices = db.get('devices').value();
 // vacuum
 app.get('/vacuum/:id/state', (req, res) => {
 
+    // testtest
+    let id = "VAC" + req.params.id
+
     let state = req.params.state === "on" ? true : false
     console.log(state)
 
