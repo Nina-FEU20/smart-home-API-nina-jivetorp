@@ -16,144 +16,199 @@ let devices = db.get('devices').value();
 // localhost:3000/{category}/{id}?state={on/off}
 
 // vacuum
-app.get('/vacuum/:id/state', (req, res) => {
+app.get('/vacuum/:id/:state', (req, res) => {
 
-    // testtest
     let id = "VAC" + req.params.id
 
-    let state = req.params.state === "on" ? true : false
-    console.log(state)
+    // getting the light that matches the ID. 
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
 
-    db.get('devices')
-        .find({ id: "VAC1" })
-        .assign({ on: state })
-        .value();
+    // if the id doesnt match any of the items
+    if (currentDevice === undefined) {
+        res.send("There is no vacuum with this ID")
+    } else {
 
+        let state = getState(req.params.state, currentDevice)
 
-    state === true ? res.send("Vacuum cleaner is on") : res.send("Vacuum cleaner is off")
+        db.get('devices')
+            .find({ id: id })
+            .assign({ on: state })
+            .value();
 
-    update();
+        req.params.state === "on" || req.params.state === "off" ? res.send(`Vacuum cleaner is ${req.params.state}`) : res.send(`Please specify if you want to turn the vacuum cleaner on or off`)
+
+        update();
+    }
 })
+
 
 // AC
 app.get('/ac/:id/:state', (req, res) => {
 
-    let state = req.params.state === "on" ? true : false
+    let id = "AC" + req.params.id
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
 
-    db.get('devices')
-        .find({ id: "AC1" })
-        .assign({ on: state })
-        .value();
-
-    state === true ? res.send("AC is on") : res.send("AC is off")
-
-    update();
-})
-
-// // Blind
-
-app.get('/blind/:id/:state', (req, res) => {
-
-    let state = req.params.state === "on" ? true : false
-
-    db.get('devices')
-        .find({ id: "BLI1" })
-        .assign({ on: state })
-        .value();
-
-    state === true ? res.send("Blind is down") : res.send("Blind is up")
-
-    update();
-})
-
-// lampor
-app.get('/lights/:id/:state', (req, res) => {
-
-    // getting the ID 
-    let id = "LIG" + req.params.id;
-
-    // getting the light that matches the ID. 
-    let currentLight = db.get('devices').value().find(current => current.id === id)
-
-    // if the id doesnt match any of the items
-    if (currentLight === undefined) {
-        res.send("There is no light with this ID")
+    if (currentDevice === undefined) {
+        res.send("There is no AC with this ID")
     } else {
 
-        let state = "";
+        let state = getState(req.params.state, currentDevice)
 
-        // Checking the value of the param state to decide what to do witht he light
-        if (req.params.state === "on") {
-            state = true;
-        } else if (req.params.state === "off") {
-            state = false;
-        } else {
-            state = currentLight.on
-        }
-
-        // sending in the new values we actually want to update with
         db.get('devices')
             .find({ id: id })
-            .assign({ on: state, brightness: isNaN((req.query.brightness)) ? currentLight.brightness : req.query.brightness })
+            .assign({ on: state, temperature: isNaN(req.query.temperature) ? currentDevice.temperature : req.query.temperature })
             .value();
 
-        // Checking the value of the param state to see what message we wanna send 
-        if (req.params.state === "on") {
-            res.send(`You turned on the light in the ${currentLight.name}`)
-        } else if (req.params.state === "off") {
-            res.send(`You turned off the light in the ${currentLight.name}`)
-        } else {
-            res.send(`The light in the ${currentLight.name} remains the same. Please specify if you want to turn it on or off`)
-        }
+        req.params.state === "on" || req.params.state === "off" ? res.send(`AC is ${req.params.state}`) : res.send(`Please specify if you want to turn the AC on or off`)
 
         update();
 
     }
 })
 
+// // Blind
+
+app.get('/blind/:id/:state', (req, res) => {
+
+    let id = "BLI" + req.params.id
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
+
+    if (currentDevice === undefined) {
+        res.send("There is no blind with this ID")
+    } else {
+
+        let state = getState(req.params.state, currentDevice)
+
+        db.get('devices')
+            .find({ id: id })
+            .assign({ on: state })
+            .value();
+
+        req.params.state === "on" || req.params.state === "off" ? res.send(`The Blind is ${req.params.state === "on" ? "down" : "up"}`) : res.send(`Please specify if you want to turn the blind on or off`)
+
+        update();
+    }
+})
+
+// lampor
+app.get('/light/:id/:state', (req, res) => {
+
+    // getting the ID 
+    let id = "LIG" + req.params.id;
+
+    // getting the light that matches the ID. 
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
+
+    // if the id doesnt match any of the items
+    if (currentDevice === undefined) {
+        res.send("There is no light with this ID")
+    } else {
+        let state = getState(req.params.state, currentDevice)
+
+        // sending in the new values we actually want to update with
+        db.get('devices')
+            .find({ id: id })
+            .assign({ on: state, brightness: isNaN((req.query.brightness)) ? currentDevice.brightness : req.query.brightness })
+            .value();
+
+        // Checking the value of the param state to see what message we wanna send 
+        req.params.state === "on" || req.params.state === "off" ? res.send(`You turned ${req.params.state} the light in the ${currentDevice.name}`) : res.send(`Please specify if you want to turn the light on or off`)
+
+        update();
+    }
+})
+
 // Camera
 app.get('/camera/:id/:state', (req, res) => {
 
-    let state = req.params.state === "on" ? true : false
+    // getting the ID 
+    let id = "CAM" + req.params.id;
 
-    db.get('devices')
-        .find({ id: "CAM1" })
-        .assign({ on: state })
-        .value();
+    // getting the light that matches the ID. 
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
 
-    state === true ? res.send("Camera is on") : res.send("Camera is off")
+    // if the id doesnt match any of the items
+    if (currentDevice === undefined) {
+        res.send("There is no camera with this ID")
+    } else {
+        let state = getState(req.params.state, currentDevice)
 
-    update();
+        db.get('devices')
+            .find({ id: id })
+            .assign({ on: state })
+            .value();
+
+        req.params.state === "on" || req.params.state === "off" ? res.send(`Camera is ${req.params.state}`) : res.send(`Please specify if you want to turn the camera on or off`)
+
+        update();
+    }
 })
 
 // lock
-app.get('/door/:id/:state', (req, res) => {
+app.get('/lock/:id/:state', (req, res) => {
 
-    let state = req.params.state === "on" ? true : false
+    // getting the ID 
+    let id = "LOC" + req.params.id;
 
-    db.get('devices')
-        .find({ id: "LOC1" })
-        .assign({ locked: state })
-        .value();
+    // getting the light that matches the ID. 
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
 
-    state === true ? res.send("Door is open") : res.send("Door is locked")
+    // if the id doesnt match any of the items
+    if (currentDevice === undefined) {
+        res.send("There is no camera with this ID")
+    } else {
 
-    update();
+        let state = getState(req.params.state, currentDevice)
+
+        db.get('devices')
+            .find({ id: id })
+            .assign({ locked: state })
+            .value();
+
+        req.params.state === "on" || req.params.state === "off" ? res.send(`Door is ${req.params.state === "on" ? "open" : "closed"}`) : res.send(`Please specify if you want to lock or open the door`)
+
+        update();
+    }
 })
 
 // Speaker 
 app.get('/speaker/:id/:state', (req, res) => {
 
-    let state = req.params.state === "on" ? true : false
+    // getting the ID 
+    let id = "SPE" + req.params.id;
 
-    db.get('devices')
-        .find({ id: "SPE1" })
-        .assign({ on: state })
-        .value();
+    // getting the light that matches the ID. 
+    let currentDevice = db.get('devices').value().find(current => current.id === id)
 
-    state === true ? res.send("Speakers is on!") : res.send("Speaker is off!")
+    // if the id doesnt match any of the items
+    if (currentDevice === undefined) {
+        res.send("There is no camera with this ID")
+    } else {
 
-    update();
+        let state = getState(req.params.state, currentDevice)
+
+
+        db.get('devices')
+            .find({ id: id })
+            .assign({ on: state })
+            .value();
+
+        req.params.state === "on" || req.params.state === "off" ? res.send(`Speakers is ${req.params.state}`) : res.send(`Please specify if you want to turn the speaker on or off`)
+
+        update();
+    }
 })
 
+
+// function to check if we want to turn on or off an item
+const getState = (value, item) => {
+
+    if (value === "on") {
+        return true;
+    } else if (value === "off") {
+        return false;
+    } else {
+        return item.on
+    }
+}
 
